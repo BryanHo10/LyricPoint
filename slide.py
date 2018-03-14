@@ -38,8 +38,9 @@ class SlideShow:
 		page_soup=soup(htmlPage.text,"html.parser")
 
 		songUrl=page_soup.findAll("h2",{'class':'media-card-title'})[0]
-		songUrl=songUrl.find('a',{'class':'title'})['href']
-		my_url=self._base+songUrl
+		songUrl=songUrl.find('a',{'class':'title'})
+		self._title=songUrl.span.string
+		my_url=self._base+songUrl['href']
 
 		htmlPage= requests.get(my_url,headers=self.headers)
 		htmlPage.raise_for_status()
@@ -53,11 +54,21 @@ class SlideShow:
 	def splitLyrics(self,lyrics):
 		refinedLyric=[]
 		for verse in lyrics:
+			verse=verse.replace('1','')
+			verse=verse.replace('2','')
+			verse=verse.replace('3','')
+			verse=verse.replace('4','')			
+			verse=verse.replace('BRIDGE','')
 			refinedLyric+=(verse.split('\n\n'))
-		print(refinedLyric)
+		for i in range(len(refinedLyric)):
+			refinedLyric[i]=refinedLyric[i].strip()
 		self._lyrics=refinedLyric
-		self.makeSlide()
 
+
+	def displayLyrics(self):
+		for line in self._lyrics:
+			print(line)
+			print()
 
 	def makeSlide(self):
 		prs=Presentation()
@@ -78,6 +89,26 @@ class SlideShow:
 			p.alignment = PP_ALIGN.CENTER
 
 		prs.save(self._filename+'.pptx')
+	def addSong(self,title,artist):
+		prs=Presentation(self._filename+'.pptx')
+		newSong=SlideShow(title,artist)
+
+		blank_slide_layout = prs.slide_layouts[5]
+		for verse in newSong._lyrics:
+			slide = prs.slides.add_slide(blank_slide_layout)
+			shapes = slide.shapes
+			left = top = width = height = Inches(1)
+			txBox = slide.shapes.add_textbox(left+Inches(3.5), top+Inches(0.25), width, height)
+			tf = txBox.text_frame
+
+			title = slide.shapes.title
+			title.text = newSong._title
+			p = tf.add_paragraph()
+			p.text = verse
+			p.font.size = Pt(32)
+			p.alignment = PP_ALIGN.CENTER
+
+		prs.save(self._filename+'.pptx')		
 
 
 '''
